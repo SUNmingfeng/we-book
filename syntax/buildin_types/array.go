@@ -11,7 +11,7 @@ func Slice() {
 	s1 := []int{3, 4, 5}
 	fmt.Printf("s1: %v \n len: %d \n cap: %d \n", s1, len(s1), cap(s1))
 
-	s2 := make([]int, 3, 4)
+	s2 := make([]int, 3, 4) //切片容量为4，初始化了3个元素
 	fmt.Printf("s2: %v \n len: %d \n cap: %d \n", s2, len(s2), cap(s2))
 	s2 = append(s2, 7) //len=4, cap=4
 	s2 = append(s2, 8) //len=5, cap=9
@@ -19,8 +19,13 @@ func Slice() {
 }
 
 func SubSlice() {
-	s1 := []int{2, 4, 6, 8}
-	fmt.Printf("s1: %v， len:%d, cap:%d", s1, len(s1), cap(s1))
-	s2 := s1[:1] //左闭右开，右边的不取
-	fmt.Printf("s2: %v， len:%d, cap:%d", s2, len(s2), cap(s2))
+	s1 := []int{2, 4, 6, 8, 10}
+	fmt.Printf("s1: %v， len:%d, cap:%d \n", s1, len(s1), cap(s1))
+	s2 := s1[:2] //左闭右开，右边的不取
+	fmt.Printf("s2: %v， len:%d, cap:%d \n", s2, len(s2), cap(s2))
+	s3 := s1[2:] //左闭右开，右边的不取
+	fmt.Printf("s3: %v， len:%d, cap:%d \n", s3, len(s3), cap(s3))
+	s4 := s1[1:3] //左闭右开，右边的不取
+	//子切片容量：从子切片的起始取到全切片的最后
+	fmt.Printf("s4: %v， len:%d, cap:%d \n", s4, len(s4), cap(s4))
 }
