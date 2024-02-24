@@ -16,4 +16,5 @@ func (l *LinkedList) Add(index int, val any) {
 }
 
 type node struct {
+	data any
 }

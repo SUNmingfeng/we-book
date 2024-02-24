@@ -3,5 +3,6 @@ package main
 func main() {
 	//Map()
 	//Slice()
-	SubSlice()
+	//SubSlice()
+	ShareSlice()
 }

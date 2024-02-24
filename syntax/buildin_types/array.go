@@ -29,3 +29,20 @@ func SubSlice() {
 	//子切片容量：从子切片的起始取到全切片的最后
 	fmt.Printf("s4: %v， len:%d, cap:%d \n", s4, len(s4), cap(s4))
 }
+
+func ShareSlice() {
+	s1 := []int{2, 4, 6, 8, 10}
+	fmt.Printf("s1: %v， len:%d, cap:%d \n", s1, len(s1), cap(s1))
+	s2 := s1[2:]
+	//修改s2元素，s1的元素被同步修改
+	s2[0] = 99
+	fmt.Printf("s2: %v， len:%d, cap:%d \n", s2, len(s2), cap(s2))
+	fmt.Printf("s1: %v， len:%d, cap:%d \n", s1, len(s1), cap(s1))
+	//给s2扩容
+	s2 = append(s2, 200)
+	fmt.Printf("s2: %v， len:%d, cap:%d \n", s2, len(s2), cap(s2))
+	//修改s2的元素，s1元素不再被同步修改
+	s2[0] = 999
+	fmt.Printf("s2: %v， len:%d, cap:%d \n", s2, len(s2), cap(s2))
+	fmt.Printf("s1: %v， len:%d, cap:%d \n", s1, len(s1), cap(s1))
+}
