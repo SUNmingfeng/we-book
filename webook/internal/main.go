@@ -9,10 +9,10 @@ import (
 )
 
 func main() {
-	hdl := &web.UserHandler{}
+	hdl := web.NewUserHandler()
 	server := gin.Default()
 	// 在Use中注册的方法都是middleware，进入engine的请求都会先执行middleware
-	server.Use(cors.New(cors.Config{
+	server.Use(cors.New(cors.Config{ //临时解决跨域问题
 		AllowCredentials: true,
 		AllowHeaders:     []string{"Content-Type", "authorization"},
 		AllowOriginFunc: func(origin string) bool {
