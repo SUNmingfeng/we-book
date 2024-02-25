@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	emailRegexpPattern    = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$"
+	emailRegexpPattern = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$"
+	//至少包含字母、数字、特殊字符，1-9位
 	passwordRegexpPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
 )
 
@@ -54,7 +55,12 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 	}
 	isPassword, _ := h.passwordPexExp.MatchString(req.Password)
 	if !isPassword {
-		ctx.String(http.StatusOK, "非法密码格式")
+		ctx.String(http.StatusOK, "非法密码格式，至少包含字母、数字、特殊字符，1-9位")
+		return
+	}
+
+	if req.ConfirmPassword != req.Password {
+		ctx.String(http.StatusOK, "两次密码输入不一致")
 		return
 	}
 	ctx.String(http.StatusOK, fmt.Sprintf("你正在注册：%v", req))
