@@ -15,6 +15,8 @@ const (
 	passwordRegexpPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
 )
 
+var ErrDuplicateEmail = service.ErrDuplicateEmail
+
 type UserHandler struct {
 	emailRexExp    *regexp.Regexp
 	passwordPexExp *regexp.Regexp
@@ -74,12 +76,14 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 		Email:    req.Email,
 		PassWord: req.Password,
 	})
-	if err != nil {
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, fmt.Sprint("注册成功！"))
+	case ErrDuplicateEmail:
+		ctx.String(http.StatusOK, "注册邮箱冲突，请换一个")
+	default:
 		ctx.String(http.StatusOK, "系统错误")
-		return
 	}
-
-	ctx.String(http.StatusOK, fmt.Sprint("注册成功！"))
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
