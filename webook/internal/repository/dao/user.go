@@ -3,12 +3,16 @@ package dao
 import (
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 	"time"
 )
 
-var ErrDuplicateEmail = errors.New("邮箱冲突")
+var (
+	ErrDuplicateEmail = errors.New("邮箱冲突")
+	ErrRecordNotFound = gorm.ErrRecordNotFound
+)
 
 type UserDAO struct {
 	db *gorm.DB
@@ -33,6 +37,13 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 		}
 	}
 	return err
+}
+
+func (dao *UserDAO) FindByEmail(ctx *gin.Context, email string) (User, error) {
+	var u User
+	//First方法找不到会返回错误，Find方法找不到err==nil
+	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error
+	return u, err
 }
 
 type User struct {

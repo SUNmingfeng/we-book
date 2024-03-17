@@ -15,7 +15,10 @@ const (
 	passwordRegexpPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
 )
 
-var ErrDuplicateEmail = service.ErrDuplicateEmail
+var (
+	ErrDuplicateEmail = service.ErrDuplicateEmail
+	ErrUserNotFound   = service.ErrInvaildUserOrPassword
+)
 
 type UserHandler struct {
 	emailRexExp    *regexp.Regexp
@@ -87,7 +90,24 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
-
+	type Req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req Req
+	//取出前端数据到req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	err := h.svc.Login(ctx, req.Email, req.Password)
+	switch err {
+	case nil:
+		ctx.String(http.StatusOK, "登录成功")
+	case service.ErrInvaildUserOrPassword:
+		ctx.String(http.StatusOK, "用户不存在或密码不正确")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {
