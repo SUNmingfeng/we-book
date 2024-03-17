@@ -1,6 +1,7 @@
 package web
 
 import (
+	"basic-go/webook/internal/domain"
 	"basic-go/webook/internal/service"
 	"fmt"
 	regexp "github.com/dlclark/regexp2"
@@ -15,16 +16,17 @@ const (
 )
 
 type UserHandler struct {
-	svc            *service.UserService
 	emailRexExp    *regexp.Regexp
 	passwordPexExp *regexp.Regexp
+	svc            *service.UserService
 }
 
-func NewUserHandler() *UserHandler {
+func NewUserHandler(svc *service.UserService) *UserHandler {
 	return &UserHandler{
 		//预编译正则
 		emailRexExp:    regexp.MustCompile(emailRegexpPattern, regexp.None),
 		passwordPexExp: regexp.MustCompile(passwordRegexpPattern, regexp.None),
+		svc:            svc,
 	}
 }
 
@@ -44,10 +46,11 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 		ConfirmPassword string `json:"confirmPassword"`
 	}
 	var req SignReq
-	//由bind完成回写
+	//取出前端数据到req
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
+	//对前端输出的一些格式验证
 	isEmail, _ := h.emailRexExp.MatchString(req.Email)
 	if !isEmail {
 		ctx.String(http.StatusOK, "非法邮箱格式")
@@ -63,7 +66,20 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "两次密码输入不一致")
 		return
 	}
-	ctx.String(http.StatusOK, fmt.Sprintf("你正在注册：%v", req))
+
+	//执行登陆，校验用户和密码
+
+	//存储数据
+	err := h.svc.Signup(ctx, domain.User{
+		Email:    req.Email,
+		PassWord: req.Password,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	ctx.String(http.StatusOK, fmt.Sprint("注册成功！"))
 }
 
 func (h *UserHandler) Login(ctx *gin.Context) {
