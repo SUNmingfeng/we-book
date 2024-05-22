@@ -5,7 +5,10 @@ import (
 	"basic-go/webook/internal/repository/dao"
 	"basic-go/webook/internal/service"
 	"basic-go/webook/internal/web"
+	"basic-go/webook/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -14,7 +17,6 @@ import (
 )
 
 func main() {
-
 	db := initDB()
 	server := initWebServer()
 	initUserHdl(db, server)
@@ -58,7 +60,13 @@ func initWebServer() *gin.Engine {
 		//以*context为参数的方法都可以作为HandlerFunc
 		func(ctx *gin.Context) {
 			println("这里是middleware")
-		})
+		},
+	)
+	login := &middlewares.MiddlewareBuilder{}
+	//用来存储session
+	store := cookie.NewStore([]byte("secret"))
+	//先初始化session，后面才能使用
+	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 	return server
 }
 

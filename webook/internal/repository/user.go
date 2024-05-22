@@ -5,6 +5,7 @@ import (
 	"basic-go/webook/internal/repository/dao"
 	"context"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 var (
@@ -27,6 +28,7 @@ func (repo *UserRepository) Create(ctx context.Context, u domain.User) error {
 	return repo.dao.Insert(ctx, dao.User{
 		Email:    u.Email,
 		PassWord: u.PassWord,
+		Birthday: u.Birthday.UnixMilli(),
 	})
 }
 
@@ -38,10 +40,34 @@ func (repo *UserRepository) FindByEmail(ctx *gin.Context, email string) (domain.
 	return repo.toDomain(u), nil
 }
 
+func (repo *UserRepository) FindById(ctx *gin.Context, userid int64) (domain.User, error) {
+	u, err := repo.dao.FindById(ctx, userid)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return repo.toDomain(u), nil
+}
+
 func (repo *UserRepository) toDomain(u dao.User) domain.User {
 	return domain.User{
 		Id:       u.ID,
+		Nickname: u.Nickname,
 		Email:    u.Email,
 		PassWord: u.PassWord,
+		Birthday: time.UnixMilli(u.Birthday),
+		AboutMe:  u.AboutMe,
+	}
+}
+
+func (repo *UserRepository) UpdateFields(ctx *gin.Context, user domain.User) error {
+	return repo.dao.UpdateById(ctx, repo.toEntity(user))
+}
+
+func (repo *UserRepository) toEntity(user domain.User) dao.User {
+	return dao.User{
+		ID:       user.Id,
+		Nickname: user.Nickname,
+		Birthday: user.Birthday.UnixMilli(),
+		AboutMe:  user.AboutMe,
 	}
 }

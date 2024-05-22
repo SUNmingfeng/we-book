@@ -5,8 +5,10 @@ import (
 	"basic-go/webook/internal/service"
 	"fmt"
 	regexp "github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	time2 "time"
 )
 
 const (
@@ -72,8 +74,6 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 		return
 	}
 
-	//执行登陆，校验用户和密码
-
 	//存储数据
 	err := h.svc.Signup(ctx, domain.User{
 		Email:    req.Email,
@@ -85,7 +85,7 @@ func (h *UserHandler) SginUp(ctx *gin.Context) {
 	case ErrDuplicateEmail:
 		ctx.String(http.StatusOK, "注册邮箱冲突，请换一个")
 	default:
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "系统错误:", err)
 	}
 }
 
@@ -99,9 +99,21 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	err := h.svc.Login(ctx, req.Email, req.Password)
+	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch err {
 	case nil:
+		//登录成功后存储session
+		sess := sessions.Default(ctx) //获取这个请求的session
+		sess.Set("userId", u.Id)      //必须与save搭配使用才能生效
+		sess.Options(sessions.Options{
+			MaxAge: 900, //有效期
+			//HttpOnly: true,
+		})
+		err = sess.Save()
+		if err != nil {
+			ctx.String(http.StatusOK, "系统错误")
+			return
+		}
 		ctx.String(http.StatusOK, "登录成功")
 	case service.ErrInvaildUserOrPassword:
 		ctx.String(http.StatusOK, "用户不存在或密码不正确")
@@ -111,9 +123,72 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (h *UserHandler) Edit(ctx *gin.Context) {
+	type EditReq struct {
+		Nickname string `json:"Nickname"`
+		Birthday string `json:"Birthday"`
+		AboutMe  string `json:"AboutMe"`
+	}
+	var req EditReq
+	//取出前端数据到req
+	if err := ctx.Bind(&req); err != nil {
+		ctx.String(http.StatusOK, "获取信息错误")
+		return
+	}
+	sess := sessions.Default(ctx) //获取当前 HTTP 请求的会话
+	userid := sess.Get("userId").(int64)
+	if len(req.Nickname) > 8 {
+		res := Res{
+			Code: 1,
+			Msg:  "昵称长度不能超过8个字符",
+		}
+		ctx.JSON(http.StatusOK, res)
+	}
+	birthday, err := time2.Parse(time2.DateOnly, req.Birthday)
+	fmt.Printf("生日：%v", birthday)
+	if err != nil {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "生日格式不对")
+		return
+	}
+	err = h.svc.UpdateInfo(ctx, domain.User{
+		Id:       userid,
+		Nickname: req.Nickname,
+		Birthday: birthday,
+		AboutMe:  req.AboutMe,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "更新异常")
+		return
+	}
+	res := Res{
+		Code: 0,
+		Msg:  "更新成功",
+	}
+	ctx.JSON(http.StatusOK, res)
+}
 
+type Res struct {
+	Code int64  `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 func (h *UserHandler) ProFile(ctx *gin.Context) {
-
+	sess := sessions.Default(ctx) //获取这个请求的session
+	userid := sess.Get("userId").(int64)
+	u, err := h.svc.FindById(ctx, userid)
+	if err != nil {
+		ctx.String(http.StatusOK, "获取数据错误")
+	}
+	type User struct {
+		Nickname string `json:"Nickname"`
+		Email    string `json:"Email"`
+		AboutMe  string `json:"AboutMe"`
+		Birthday string `json:"Birthday"`
+	}
+	ctx.JSON(http.StatusOK, User{
+		Nickname: u.Nickname,
+		Email:    u.Email,
+		Birthday: u.Birthday.Format(time2.DateOnly),
+		AboutMe:  u.AboutMe,
+	})
 }

@@ -33,20 +33,28 @@ func (svc *UserService) Signup(ctx *gin.Context, u domain.User) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Login(ctx *gin.Context, email string, password string) error {
+func (svc *UserService) Login(ctx *gin.Context, email string, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
 	if err == repository.ErrRecordNotFound {
-		return ErrInvaildUserOrPassword
+		return u, ErrInvaildUserOrPassword
 	}
 	if err != nil {
-		return err
+		return u, err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.PassWord), []byte(password))
 	if err == repository.ErrRecordNotFound {
-		return ErrInvaildUserOrPassword
+		return u, ErrInvaildUserOrPassword
 	}
 	if err != nil {
-		return err
+		return u, err
 	}
-	return nil
+	return u, nil
+}
+
+func (svc *UserService) FindById(ctx *gin.Context, userid int64) (domain.User, error) {
+	return svc.repo.FindById(ctx, userid)
+}
+
+func (svc *UserService) UpdateInfo(ctx *gin.Context, user domain.User) error {
+	return svc.repo.UpdateFields(ctx, user)
 }
