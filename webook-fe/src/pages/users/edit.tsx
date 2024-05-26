@@ -19,10 +19,6 @@ const onFinish = (values: any) => {
             if (res.data?.code == 0) {
                 router.push('/users/profile')
                 return
-            } else {
-                //todo
-                alert(res.data?.msg);
-                return
             }
             alert(res.data?.msg || "系统错误");
         }).catch((err) => {

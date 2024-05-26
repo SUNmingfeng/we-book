@@ -128,6 +128,11 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 		Birthday string `json:"Birthday"`
 		AboutMe  string `json:"AboutMe"`
 	}
+	type Result struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+		Data any    `json:"data"`
+	}
 	var req EditReq
 	//取出前端数据到req
 	if err := ctx.Bind(&req); err != nil {
@@ -137,17 +142,26 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	sess := sessions.Default(ctx) //获取当前 HTTP 请求的会话
 	userid := sess.Get("userId").(int64)
 	if len(req.Nickname) > 8 {
-		res := Res{
+		res := Result{
 			Code: 1,
 			Msg:  "昵称长度不能超过8个字符",
 		}
 		ctx.JSON(http.StatusOK, res)
+		return
 	}
 	birthday, err := time2.Parse(time2.DateOnly, req.Birthday)
-	fmt.Printf("生日：%v", birthday)
 	if err != nil {
 		//ctx.String(http.StatusOK, "系统错误")
-		ctx.String(http.StatusOK, "生日格式不对")
+		ctx.String(http.StatusOK, "生日格式不正确")
+		return
+	}
+	fmt.Printf("获取到新设置生日：%v", birthday)
+	if len(req.AboutMe) > 128 {
+		res := Result{
+			Code: 1,
+			Msg:  "个人简介不能超过128字符",
+		}
+		ctx.JSON(http.StatusOK, res)
 		return
 	}
 	err = h.svc.UpdateInfo(ctx, domain.User{
