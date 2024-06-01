@@ -8,7 +8,7 @@ import (
 	"basic-go/webook/internal/web/middlewares"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -64,7 +64,14 @@ func initWebServer() *gin.Engine {
 	)
 	login := &middlewares.MiddlewareBuilder{}
 	//用来存储session
-	store := cookie.NewStore([]byte("secret"))
+	//store := cookie.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
+	//store := memstore.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"), []byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55y"))
+	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9k"),
+		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9b"))
+	if err != nil {
+		panic(err)
+	}
 	//先初始化session，后面才能使用
 	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
 	return server

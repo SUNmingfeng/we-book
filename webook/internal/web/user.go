@@ -111,7 +111,7 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 		})
 		err = sess.Save()
 		if err != nil {
-			ctx.String(http.StatusOK, "系统错误")
+			ctx.String(http.StatusOK, "存储session错误:", err)
 			return
 		}
 		ctx.String(http.StatusOK, "登录成功")
