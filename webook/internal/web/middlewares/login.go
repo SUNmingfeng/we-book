@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"encoding/gob"
+	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -34,7 +35,10 @@ func (m *MiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 		if val == nil || !ok || now.Sub(lastUpdateTime) > time.Second*10 {
 			sess.Set(updateTime, now)
 			sess.Set("userId", userId)
-			sess.Save()
+			err := sess.Save()
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
