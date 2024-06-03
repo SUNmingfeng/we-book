@@ -1,15 +1,18 @@
 package middlewares
 
 import (
+	"encoding/gob"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
 type MiddlewareBuilder struct {
 }
 
 func (m *MiddlewareBuilder) CheckLogin() gin.HandlerFunc {
+	gob.Register(time.Now())
 	return func(context *gin.Context) {
 		path := context.Request.URL.Path
 		//这两个接口不需要登录校验
@@ -17,9 +20,21 @@ func (m *MiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 		sess := sessions.Default(context)
-		if sess.Get("userId") == nil {
+		userId := sess.Get("userId")
+		if userId == nil {
 			//中断，不再向后执行
 			context.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		const updateTime = "update_time"
+		val := sess.Get(updateTime)
+		lastUpdateTime, ok := val.(time.Time)
+		now := time.Now()
+		if val == nil || !ok || now.Sub(lastUpdateTime) > time.Second*10 {
+			sess.Set(updateTime, now)
+			sess.Set("userId", userId)
+			sess.Save()
 		}
 	}
 }
