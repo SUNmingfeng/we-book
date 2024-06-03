@@ -7,6 +7,7 @@ import (
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	time2 "time"
 )
@@ -41,7 +42,8 @@ func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	// 使用group分组路由来简化注册
 	ug := server.Group("/users")
 	ug.POST("/signup", h.SginUp)
-	ug.POST("/login", h.Login)
+	//ug.POST("/login", h.Login)
+	ug.POST("/login", h.LoginJWT)
 	ug.GET("/profile", h.ProFile)
 	ug.POST("/edit", h.Edit)
 }
@@ -114,6 +116,36 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 			ctx.String(http.StatusOK, "存储session错误:", err)
 			return
 		}
+		ctx.String(http.StatusOK, "登录成功")
+	case service.ErrInvaildUserOrPassword:
+		ctx.String(http.StatusOK, "用户不存在或密码不正确")
+	default:
+		ctx.String(http.StatusOK, "系统错误")
+	}
+}
+
+func (h *UserHandler) LoginJWT(ctx *gin.Context) {
+	type Req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	var req Req
+	//取出前端数据到req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	u, err := h.svc.Login(ctx, req.Email, req.Password)
+	switch err {
+	case nil:
+		uc := UserClaims{
+			Uid: u.Id,
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+		tokenString, err := token.SignedString([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9ToEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
+		if err != nil {
+			ctx.String(http.StatusOK, "jwt token生成错误")
+		}
+		ctx.Header("x-jwt-token", tokenString)
 		ctx.String(http.StatusOK, "登录成功")
 	case service.ErrInvaildUserOrPassword:
 		ctx.String(http.StatusOK, "用户不存在或密码不正确")
@@ -205,4 +237,9 @@ func (h *UserHandler) ProFile(ctx *gin.Context) {
 		Birthday: u.Birthday.Format(time2.DateOnly),
 		AboutMe:  u.AboutMe,
 	})
+}
+
+type UserClaims struct {
+	jwt.RegisteredClaims
+	Uid int64
 }

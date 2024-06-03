@@ -42,7 +42,8 @@ func initWebServer() *gin.Engine {
 			//允许带的认证信息，cookie等
 			AllowCredentials: true,
 			//允许header中带的头
-			AllowHeaders: []string{"Content-Type", "authorization"},
+			AllowHeaders:  []string{"Content-Type", "Authorization"},
+			ExposeHeaders: []string{"x-jwt-token"},
 			//origin：请求来源
 			AllowOriginFunc: func(origin string) bool {
 				//允许本地
