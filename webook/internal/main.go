@@ -63,18 +63,8 @@ func initWebServer() *gin.Engine {
 			println("这里是middleware")
 		},
 	)
-	login := &middlewares.MiddlewareBuilder{}
-	//用来存储session
-	//store := cookie.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
-	//store := memstore.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"), []byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55y"))
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
-		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9k"),
-		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9b"))
-	if err != nil {
-		panic(err)
-	}
-	//先初始化session，后面才能使用
-	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+	//useSession(server)
+	useJWT(server)
 	return server
 }
 
@@ -89,4 +79,24 @@ func initDB() *gorm.DB {
 		panic(err)
 	}
 	return db
+}
+
+func useSession(server *gin.Engine) {
+	login := &middlewares.MiddlewareBuilder{}
+	//用来存储session
+	//store := cookie.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
+	//store := memstore.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"), []byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55y"))
+	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9k"),
+		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9b"))
+	if err != nil {
+		panic(err)
+	}
+	//先初始化session，后面才能使用
+	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+}
+
+func useJWT(server *gin.Engine) {
+	login := &middlewares.MiddlewareJWTBuilder{}
+	server.Use(login.CheckLogin())
 }

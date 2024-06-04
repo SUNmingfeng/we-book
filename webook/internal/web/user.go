@@ -139,9 +139,12 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	case nil:
 		uc := UserClaims{
 			Uid: u.Id,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time2.Now().Add(time2.Minute * 30)),
+			},
 		}
 		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-		tokenString, err := token.SignedString([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9ToEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
+		tokenString, err := token.SignedString(JWTKey)
 		if err != nil {
 			ctx.String(http.StatusOK, "jwt token生成错误")
 		}
@@ -219,9 +222,11 @@ type Res struct {
 }
 
 func (h *UserHandler) ProFile(ctx *gin.Context) {
-	sess := sessions.Default(ctx) //获取这个请求的session
-	userid := sess.Get("userId").(int64)
-	u, err := h.svc.FindById(ctx, userid)
+	uc := ctx.MustGet("user").(UserClaims)
+	//sess := sessions.Default(ctx) //获取这个请求的session
+	//userid := sess.Get("userId").(int64)
+	//u, err := h.svc.FindById(ctx, userid)
+	u, err := h.svc.FindById(ctx, uc.Uid)
 	if err != nil {
 		ctx.String(http.StatusOK, "获取数据错误")
 	}
@@ -238,6 +243,8 @@ func (h *UserHandler) ProFile(ctx *gin.Context) {
 		AboutMe:  u.AboutMe,
 	})
 }
+
+var JWTKey = []byte("ehOk5JYoP2glSsMXmSvhRdupSr9ToEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N")
 
 type UserClaims struct {
 	jwt.RegisteredClaims
