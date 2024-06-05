@@ -34,7 +34,7 @@ func (m *MiddlewareJWTBuilder) CheckLogin() gin.HandlerFunc {
 		}
 		tokenStr := segs[1]
 		uc := web.UserClaims{}
-		//此处token和uc产生了绑定关系？
+		//uc传给了token.claims
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
 			return web.JWTKey, nil
 		})
@@ -52,9 +52,7 @@ func (m *MiddlewareJWTBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 		if expireTime.Sub(time.Now()) < time.Second*50 {
-			//uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
-			fmt.Println("原tokenstr：")
-			fmt.Println(tokenStr)
+			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
 			tokenStr, err = token.SignedString(web.JWTKey)
 			fmt.Println("现tokenstr：")
 			fmt.Println(tokenStr)
