@@ -42,6 +42,12 @@ func (m *MiddlewareJWTBuilder) CheckLogin() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+
+		if uc.UserAgent != ctx.GetHeader("User-Agent") {
+			//后期埋点告警
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
 		if !token.Valid {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
