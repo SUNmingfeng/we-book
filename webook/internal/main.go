@@ -6,10 +6,12 @@ import (
 	"basic-go/webook/internal/service"
 	"basic-go/webook/internal/web"
 	"basic-go/webook/internal/web/middlewares"
+	"basic-go/webook/pkg/ginx/middleware/ratelimit"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
+	sess_redis "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -63,6 +65,11 @@ func initWebServer() *gin.Engine {
 			println("这里是middleware")
 		},
 	)
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())
 	//useSession(server)
 	useJWT(server)
 	return server
@@ -86,7 +93,7 @@ func useSession(server *gin.Engine) {
 	//用来存储session
 	//store := cookie.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"))
 	//store := memstore.NewStore([]byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N"), []byte("ehOk5JYoP2glSsMXmSvhRdupSr9TgEuiMLvSmKU127SpCkCxDB8JoMgONCszg55y"))
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "",
+	store, err := sess_redis.NewStore(16, "tcp", "localhost:6379", "",
 		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9k"),
 		[]byte("yMvUN8X2MdHYBoF8Dvi60SMjXCe4aD9b"))
 	if err != nil {
