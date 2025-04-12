@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webook
+  template:
+      metadata:
+        labels:
+          app: webook
+          #以下是 Deployment管理的pod 的模板
+      spec:
+        containers:
+          - name: webook
+            image: vincentsun/webook:v0.0.1
+            ports:
+              - containerPort: 8080

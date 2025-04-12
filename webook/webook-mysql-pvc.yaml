@@ -1,0 +1,13 @@
+#声明容器需要什么存储资源
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webook-mysql-pvc
+spec:
+  storageClassName: record
+  #accessModes 访问模式，pvc里是说这个声明需要怎样的访问模式
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

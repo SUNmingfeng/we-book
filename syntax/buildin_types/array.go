@@ -3,8 +3,10 @@ package main
 import "fmt"
 
 func Array() {
-	a1 := [5]int{3, 4, 5}
-	fmt.Printf("a1: %v \n len: %d \n cap: %d", a1, len(a1), cap(a1))
+	a1 := [6]int{3, 4, 5}
+	fmt.Printf("a1: %v \n len: %d \n cap: %d \n", a1, len(a1), cap(a1))
+	var a2 [6]int //默认都赋值为0
+	fmt.Printf("a2: %v \n len: %d \n cap: %d", a2, len(a2), cap(a2))
 }
 
 func Slice() {
@@ -14,8 +16,11 @@ func Slice() {
 	s2 := make([]int, 3, 4) //切片容量为4，初始化了3个元素
 	fmt.Printf("s2: %v \n len: %d \n cap: %d \n", s2, len(s2), cap(s2))
 	s2 = append(s2, 7) //len=4, cap=4
-	s2 = append(s2, 8) //len=5, cap=9
+	s2 = append(s2, 8) //len=5, cap=8 原容量不足，扩容，容量*2
+	fmt.Printf("s2: %v \n len: %d \n cap: %d \n", s2, len(s2), cap(s2))
 	//推荐写法  s3 := make([]int, 0, capacity) len=0，并预估容量capacity，因为扩容性能很差
+	s4 := make([]int, 4) //切片容量为4，初始化了4个元素
+	fmt.Printf("s4: %v \n len: %d \n cap: %d \n", s4, len(s4), cap(s4))
 }
 
 func SubSlice() {

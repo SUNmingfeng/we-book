@@ -1,0 +1,17 @@
+#声明我有什么样的存储资源
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: webook-mysql-pv
+spec:
+  storageClassName: record
+  capacity:
+    storage: 1Gi
+  #accessModes 访问模式，pv里是这个存储资源支持怎样的访问模式
+  accessModes:
+    #ReadWriteOnce只能被挂载到一个pod，被它读写
+    #ReadOnlyMany可以被挂载到多个pod，只能读
+    #ReadWriteMany可以被挂载到多个pod，被它读写
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"

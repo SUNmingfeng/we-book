@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-mysql-deployment
+  labels:
+    app: webook-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webook-mysql
+  template:
+      metadata:
+        name: webook-mysql-template
+        labels:
+          app: webook-mysql
+          #以下是 Deployment管理的pod 的模板
+      spec:
+        containers:
+          - name: webook-mysql
+            image: mysql:8.0
+            env:
+              - name: MYSQL_ROOT_PASSWORD
+                value: root
+            imagePullPolicy: IfNotPresent
+            ports:
+              - containerPort: 3306
+            volumeMounts:
+              #挂载到容器的什么位置
+              - mountPath: /var/lib/mysql
+                name: mysql-storage
+        #挂载的是什么东西，有哪些可用的挂载，这些可以通过name挂到上面的mountPath下
+        restartPolicy: Always
+        volumes:
+          - name: mysql-storage
+            persistentVolumeClaim:
+              #PVC就是Persistent Volume Claim
+              claimName: webook-mysql-pvc
