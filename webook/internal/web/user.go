@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"log"
 	"net/http"
 	time2 "time"
 )
@@ -237,6 +238,7 @@ func (h *UserHandler) ProFile(ctx *gin.Context) {
 		AboutMe  string `json:"AboutMe"`
 		Birthday string `json:"Birthday"`
 	}
+	log.Println("查到的数据：", u)
 	ctx.JSON(http.StatusOK, User{
 		Nickname: u.Nickname,
 		Email:    u.Email,

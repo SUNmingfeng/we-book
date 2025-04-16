@@ -26,9 +26,18 @@ func main() {
 	initUserHdl(db, server)
 	//server := gin.Default()
 	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "hello!")
+		ctx.String(http.StatusOK, "hello! 启动成功！")
 	})
-	server.Run(":8080")
+	//server.GET("/user/:name", func(ctx *gin.Context) {
+	//	name := ctx.Param("name")
+	//	ctx.String(http.StatusOK, name)
+	//})
+	//
+	//server.GET("/order", func(ctx *gin.Context) {
+	//	id := ctx.Query("id")
+	//	ctx.String(http.StatusOK, "我的ID是："+id)
+	//})
+	server.Run(":8080") // 默认也是8080
 }
 
 func initUserHdl(db *gorm.DB, server *gin.Engine) {
@@ -47,7 +56,7 @@ func initWebServer() *gin.Engine {
 		//跨域问题是由于发请求的协议+域名+端口和接收请求的协议+域名+端口对不上
 		//配置跨域策略
 		cors.New(cors.Config{
-			//允许带的认证信息，cookie等
+			//允许携带认证信息，cookie等
 			AllowCredentials: true,
 			//允许header中带的头
 			AllowHeaders:  []string{"Content-Type", "Authorization"},
