@@ -2,9 +2,11 @@ package repository
 
 import (
 	"basic-go/webook/internal/domain"
+	"basic-go/webook/internal/repository/cache"
 	"basic-go/webook/internal/repository/dao"
 	"context"
 	"github.com/gin-gonic/gin"
+	"log"
 	"time"
 )
 
@@ -14,7 +16,8 @@ var (
 )
 
 type UserRepository struct {
-	dao *dao.UserDAO
+	dao   *dao.UserDAO
+	cache *cache.UserCache
 }
 
 func NewUserRepository(dao *dao.UserDAO) *UserRepository {
@@ -41,11 +44,30 @@ func (repo *UserRepository) FindByEmail(ctx *gin.Context, email string) (domain.
 }
 
 func (repo *UserRepository) FindById(ctx *gin.Context, userid int64) (domain.User, error) {
-	u, err := repo.dao.FindById(ctx, userid)
-	if err != nil {
+	du, err := repo.cache.Get(ctx, userid)
+	switch err {
+	case nil:
+		return du, nil
+	case cache.ErrorKeyNotExist:
+		// redis正常，没查到key
+		u, err := repo.dao.FindById(ctx, userid)
+		if err != nil {
+			return domain.User{}, err
+		}
+		du = repo.toDomain(u)
+		// 回写缓存
+		go func() {
+			err = repo.cache.Set(ctx, du)
+			if err != nil {
+				// 网络崩溃或者redis崩溃的情况下，缓存中依然没有存入该条数据
+				log.Println(err)
+			}
+		}()
+		return du, nil
+	default:
+		// 访问redis，降级，防止缓存穿透，不再查数据库，返回空
 		return domain.User{}, err
 	}
-	return repo.toDomain(u), nil
 }
 
 func (repo *UserRepository) toDomain(u dao.User) domain.User {

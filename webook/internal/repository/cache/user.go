@@ -1,0 +1,49 @@
+package cache
+
+import (
+	"basic-go/webook/internal/domain"
+	"encoding/json"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
+	"time"
+)
+
+var ErrorKeyNotExist = redis.Nil
+
+type UserCache struct {
+	cmd        redis.Cmdable
+	expiration time.Duration
+}
+
+func (c *UserCache) Get(ctx *gin.Context, userid int64) (domain.User, error) {
+	key := c.Key(userid)
+	data, err := c.cmd.Get(ctx, key).Result()
+	if err != nil {
+		return domain.User{}, err
+	}
+	var u domain.User
+	err = json.Unmarshal([]byte(data), &u)
+	return u, err
+}
+
+func (c *UserCache) Key(userid int64) string {
+	return fmt.Sprintf("user:info:%d", userid)
+}
+
+func (c *UserCache) Set(ctx *gin.Context, du domain.User) error {
+	key := c.Key(du.Id)
+	data, err := json.Marshal(du)
+	if err != nil {
+		return err
+	}
+	return c.cmd.Set(ctx, key, data, c.expiration).Err()
+}
+
+// NewUserCache 在外面实例化好cmd再传进来，因为可能需要许多不同的参数
+func NewUserCache(cmdable redis.Cmdable) *UserCache {
+	return &UserCache{
+		cmd:        cmdable,
+		expiration: time.Minute * 15,
+	}
+}
