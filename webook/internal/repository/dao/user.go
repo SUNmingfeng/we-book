@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -47,11 +48,11 @@ func (dao *UserDAO) FindByEmail(ctx *gin.Context, email string) (User, error) {
 	return u, err
 }
 
-func (dao *UserDAO) FindById(ctx *gin.Context, userid int64) (User, error) {
+func (dao *UserDAO) FindById(ctx context.Context, userid int64) (User, error) {
 	var u User
 	//First方法找不到会返回错误，Find方法找不到err==nil
 	err := dao.db.WithContext(ctx).Where("id=?", userid).First(&u).Error
-	fmt.Println("=============找到的数据=============")
+	fmt.Println("=============找到的数据by id=============")
 	fmt.Printf("nickname:%v", u.Nickname)
 	return u, err
 }
@@ -66,13 +67,25 @@ func (dao *UserDAO) UpdateById(ctx *gin.Context, entity User) error {
 		}).Error
 }
 
+func (dao *UserDAO) FindByPhone(ctx *gin.Context, phone string) (User, error) {
+	var u User
+	//First方法找不到会返回错误，Find方法找不到err==nil
+	err := dao.db.WithContext(ctx).Where("phone=?", phone).First(&u).Error
+	fmt.Println("=============找到的数据 by phone=============")
+	fmt.Printf("nickname:%v\n", u.Phone)
+	return u, err
+}
+
 type User struct {
-	ID       int64  `gorm:"primaryKey,autoIncrement"` //自增主键
-	Email    string `gorm:"unique"`                   //唯一索引
+	ID int64 `gorm:"primaryKey,autoIncrement"` //自增主键
+	//可以为NUll的列
+	Email sql.NullString `gorm:"unique"` //唯一索引
+	//可以为NUll的列
+	Phone    sql.NullString `gorm:"unique"`
 	PassWord string
-	Nickname string `gorm:"type=varchar(64)"`
+	Nickname string `gorm:"type=varchar(128)"`
 	Birthday int64
-	AboutMe  string
+	AboutMe  string `gorm:"type=varchar(4096)"`
 
 	//UTC 0的毫秒数，所有地方都使用UTC 0时区存储，只在前端展示时转换时区
 	//创建时间

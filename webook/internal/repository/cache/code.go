@@ -15,7 +15,7 @@ var (
 	luaVerifyCode string
 
 	ErrKeyNotExist       = errors.New("验证码存在，但没有过期时间")
-	ErrCodeTooMany       = errors.New("发送验证码次数过多")
+	ErrCodeSendTooMany   = errors.New("发送验证码次数过多")
 	ErrCodeVerifyTooMany = errors.New("验证次数过多")
 )
 
@@ -38,7 +38,7 @@ func (c *CodeCache) Set(ctx context.Context, biz, phone, code string) error {
 	case -2:
 		return ErrKeyNotExist
 	case -1:
-		return ErrCodeTooMany
+		return ErrCodeSendTooMany
 	default:
 		return nil
 	}

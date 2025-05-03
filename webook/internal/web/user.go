@@ -17,39 +17,46 @@ const (
 	emailRegexpPattern = "^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(.[a-zA-Z0-9_-]+)+$"
 	//至少包含字母、数字、特殊字符，1-9位
 	passwordRegexpPattern = "^(?=.*\\d)(?=.*[a-zA-Z])(?=.*[^\\da-zA-Z\\s]).{1,9}$"
+	bizLogin              = "login"
 )
 
 var (
-	ErrDuplicateEmail = service.ErrDuplicateEmail
-	ErrUserNotFound   = service.ErrInvaildUserOrPassword
+	ErrDuplicateEmail  = service.ErrDuplicateEmail
+	ErrUserNotFound    = service.ErrInvaildUserOrPassword
+	ErrCodeSendTooMany = service.ErrCodeSendTooMany
 )
 
 type UserHandler struct {
 	emailRexExp    *regexp.Regexp
 	passwordPexExp *regexp.Regexp
 	svc            *service.UserService
+	codeSvc        *service.CodeService
 }
 
-func NewUserHandler(svc *service.UserService) *UserHandler {
+func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
 	return &UserHandler{
 		//预编译正则
 		emailRexExp:    regexp.MustCompile(emailRegexpPattern, regexp.None),
 		passwordPexExp: regexp.MustCompile(passwordRegexpPattern, regexp.None),
 		svc:            svc,
+		codeSvc:        codeSvc,
 	}
 }
 
 func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	// 使用group分组路由来简化注册
 	ug := server.Group("/users")
-	ug.POST("/signup", h.SginUp)
+	ug.POST("/signup", h.SignUp)
 	//ug.POST("/login", h.Login)
 	ug.POST("/login", h.LoginJWT)
 	ug.GET("/profile", h.ProFile)
 	ug.POST("/edit", h.Edit)
+	ug.POST("login_sms/code/send", h.SendSMSLoginCode)
+	ug.POST("login_sms", h.LoginSMS)
+
 }
 
-func (h *UserHandler) SginUp(ctx *gin.Context) {
+func (h *UserHandler) SignUp(ctx *gin.Context) {
 	type SignReq struct {
 		Email           string `json:"email"`
 		Password        string `json:"password"`
@@ -138,19 +145,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch err {
 	case nil:
-		uc := UserClaims{
-			Uid: u.Id,
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time2.Now().Add(time2.Minute * 30)),
-			},
-			UserAgent: ctx.GetHeader("User-Agent"),
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-		tokenString, err := token.SignedString(JWTKey)
-		if err != nil {
-			ctx.String(http.StatusOK, "jwt token生成错误")
-		}
-		ctx.Header("x-jwt-token", tokenString)
+		h.setJWTToken(ctx, u.Id)
 		ctx.String(http.StatusOK, "登录成功")
 	case service.ErrInvaildUserOrPassword:
 		ctx.String(http.StatusOK, "用户不存在或密码不正确")
@@ -218,6 +213,22 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
+func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
+	uc := UserClaims{
+		Uid: uid,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time2.Now().Add(time2.Minute * 30)),
+		},
+		UserAgent: ctx.GetHeader("User-Agent"),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+	tokenString, err := token.SignedString(JWTKey)
+	if err != nil {
+		ctx.String(http.StatusOK, "jwt token生成错误")
+	}
+	ctx.Header("x-jwt-token", tokenString)
+}
+
 type Res struct {
 	Code int64  `json:"code"`
 	Msg  string `json:"msg"`
@@ -245,6 +256,92 @@ func (h *UserHandler) ProFile(ctx *gin.Context) {
 		Birthday: u.Birthday.Format(time2.DateOnly),
 		AboutMe:  u.AboutMe,
 	})
+}
+
+func (h *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
+	println("进入发送验证码方法")
+	type Req struct {
+		Phone string `json:"phone"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	if req.Phone == "" {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "手机号码不能为空",
+		})
+		return
+	}
+
+	if len(req.Phone) != 11 {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "手机号码格式不正确",
+		})
+		return
+	}
+
+	err := h.codeSvc.Send(ctx, bizLogin, req.Phone)
+	switch err {
+	case nil:
+		ctx.JSON(http.StatusOK, Result{
+			Msg: "发送成功",
+		})
+	case service.ErrCodeSendTooMany:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "短信发送频繁，请稍后再试",
+		})
+	default:
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+}
+
+func (h *UserHandler) LoginSMS(ctx *gin.Context) {
+	type Req struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	ok, err := h.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Res{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusOK, Res{
+			Code: 4,
+			Msg:  "验证码错误，请重新输入",
+		})
+		return
+	}
+
+	u, err := h.svc.FindOrCreate(ctx, req.Phone)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Res{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		return
+	}
+	h.setJWTToken(ctx, u.Id)
+	ctx.JSON(http.StatusOK, Res{
+		Msg: "登录成功",
+	})
+	return
 }
 
 var JWTKey = []byte("ehOk5JYoP2glSsMXmSvhRdupSr9ToEuiMLvSmKU127SpCkCxDB8JoMgONCszg55N")

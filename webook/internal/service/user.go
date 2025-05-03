@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrDuplicateEmail        = repository.RepoErrDuplicateEmail
+	ErrDuplicateEmail        = repository.RepoErrDuplicateUser
 	ErrInvaildUserOrPassword = errors.New("用户不存在或密码不正确")
 )
 
@@ -57,4 +57,21 @@ func (svc *UserService) FindById(ctx *gin.Context, userid int64) (domain.User, e
 
 func (svc *UserService) UpdateInfo(ctx *gin.Context, user domain.User) error {
 	return svc.repo.UpdateFields(ctx, user)
+}
+
+func (svc *UserService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if err != repository.ErrRecordNotFound {
+		//两种情况：一种是err为其他错误，统一为系统错误，另一种是找到数据，err==nil
+		return u, err
+	}
+	err = svc.repo.Create(ctx, domain.User{
+		Phone: phone,
+	})
+	if err != nil && err != repository.RepoErrDuplicateUser {
+		return domain.User{}, err
+	}
+	//err == nil (创建用户成功)或 err == RepoErrDuplicateUser(用户存在)
+	//这里查找用户不一定能找到，因为数据库可能存在主从延迟
+	return svc.repo.FindByPhone(ctx, phone)
 }

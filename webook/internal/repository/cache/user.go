@@ -2,9 +2,9 @@ package cache
 
 import (
 	"basic-go/webook/internal/domain"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"time"
 )
@@ -16,7 +16,7 @@ type UserCache struct {
 	expiration time.Duration
 }
 
-func (c *UserCache) Get(ctx *gin.Context, userid int64) (domain.User, error) {
+func (c *UserCache) Get(ctx context.Context, userid int64) (domain.User, error) {
 	key := c.Key(userid)
 	data, err := c.cmd.Get(ctx, key).Result()
 	if err != nil {
@@ -31,7 +31,7 @@ func (c *UserCache) Key(userid int64) string {
 	return fmt.Sprintf("user:info:%d", userid)
 }
 
-func (c *UserCache) Set(ctx *gin.Context, du domain.User) error {
+func (c *UserCache) Set(ctx context.Context, du domain.User) error {
 	key := c.Key(du.Id)
 	data, err := json.Marshal(du)
 	if err != nil {
