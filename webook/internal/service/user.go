@@ -48,11 +48,8 @@ func (svc *userService) Login(ctx *gin.Context, email string, password string) (
 		return u, err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(u.PassWord), []byte(password))
-	if err == repository.ErrRecordNotFound {
-		return u, ErrInvaildUserOrPassword
-	}
 	if err != nil {
-		return u, err
+		return domain.User{}, ErrInvaildUserOrPassword
 	}
 	return u, nil
 }

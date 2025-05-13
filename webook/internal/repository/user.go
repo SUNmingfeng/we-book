@@ -61,13 +61,18 @@ func (repo *CachedUserRepository) FindById(ctx context.Context, userid int64) (d
 		}
 		du = repo.toDomain(u)
 		// 回写缓存
-		go func() {
-			err = repo.cache.Set(ctx, du)
-			if err != nil {
-				// 网络崩溃或者redis崩溃的情况下，缓存中依然没有存入该条数据
-				log.Println(err)
-			}
-		}()
+		//go func() {
+		//	err = repo.cache.Set(ctx, du)
+		//	if err != nil {
+		//		// 网络崩溃或者redis崩溃的情况下，缓存中依然没有存入该条数据
+		//		log.Println(err)
+		//	}
+		//}()
+		err = repo.cache.Set(ctx, du)
+		if err != nil {
+			// 网络崩溃或者redis崩溃的情况下，缓存中依然没有存入该条数据
+			log.Println(err)
+		}
 		return du, nil
 	default:
 		// 访问redis，降级，防止缓存穿透，不再查数据库，返回空
@@ -77,13 +82,14 @@ func (repo *CachedUserRepository) FindById(ctx context.Context, userid int64) (d
 
 func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 	return domain.User{
-		Id:       u.ID,
+		Id:       u.Id,
 		Nickname: u.Nickname,
 		Email:    u.Email.String,
 		Phone:    u.Phone.String,
 		PassWord: u.PassWord,
 		Birthday: time.UnixMilli(u.Birthday),
 		AboutMe:  u.AboutMe,
+		Ctime:    time.UnixMilli(u.Ctime),
 	}
 }
 
@@ -93,7 +99,7 @@ func (repo *CachedUserRepository) UpdateFields(ctx *gin.Context, user domain.Use
 
 func (repo *CachedUserRepository) toEntity(user domain.User) dao.User {
 	return dao.User{
-		ID: user.Id,
+		Id: user.Id,
 		Email: sql.NullString{
 			String: user.Email,
 			Valid:  user.Email != "",

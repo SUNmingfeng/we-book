@@ -95,7 +95,7 @@ func (h *UserHandler) SignUp(ctx *gin.Context) {
 	case ErrDuplicateEmail:
 		ctx.String(http.StatusOK, "注册邮箱冲突，请换一个")
 	default:
-		ctx.String(http.StatusOK, "系统错误:", err)
+		ctx.String(http.StatusOK, "系统错误")
 	}
 }
 

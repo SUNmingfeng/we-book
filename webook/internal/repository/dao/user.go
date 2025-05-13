@@ -65,7 +65,7 @@ func (dao *GormUserDAO) FindById(ctx context.Context, userid int64) (User, error
 }
 
 func (dao *GormUserDAO) UpdateById(ctx *gin.Context, entity User) error {
-	return dao.db.WithContext(ctx).Model(&entity).Where("id = ?", entity.ID).Updates(
+	return dao.db.WithContext(ctx).Model(&entity).Where("id = ?", entity.Id).Updates(
 		map[string]interface{}{
 			"utime":    time.Now().UnixMilli(),
 			"nickname": entity.Nickname,
@@ -84,7 +84,7 @@ func (dao *GormUserDAO) FindByPhone(ctx *gin.Context, phone string) (User, error
 }
 
 type User struct {
-	ID int64 `gorm:"primaryKey,autoIncrement"` //自增主键
+	Id int64 `gorm:"primaryKey,autoIncrement"` //自增主键
 	//可以为NUll的列
 	Email sql.NullString `gorm:"unique"` //唯一索引
 	//可以为NUll的列
