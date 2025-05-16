@@ -18,7 +18,7 @@ func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler) *gin.Engine
 	return server
 }
 
-func InitMiddleware(redisClient redis.Cmdable) []gin.HandlerFunc {
+func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		//跨域问题是由于发请求的协议+域名+端口和接收请求的协议+域名+端口对不上
 		//配置跨域策略
@@ -31,7 +31,7 @@ func InitMiddleware(redisClient redis.Cmdable) []gin.HandlerFunc {
 			//origin：请求来源
 			AllowOriginFunc: func(origin string) bool {
 				//允许本地
-				if strings.Contains(origin, "localhost") {
+				if strings.HasPrefix(origin, "http://localhost") {
 					return true
 				}
 				//允许公司域名
@@ -46,7 +46,8 @@ func InitMiddleware(redisClient redis.Cmdable) []gin.HandlerFunc {
 		func(ctx *gin.Context) {
 			println("这里是middleware")
 		},
+		//ratelimit.NewBuilder(limiter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1000)).Build(),
 		ratelimit.NewBuilder(redisClient, time.Second, 1000).Build(),
-		(&middlewares.MiddlewareJWTBuilder{}).CheckLogin(),
+		(&middlewares.LoginJWTMiddlewareBuilder{}).CheckLogin(),
 	}
 }

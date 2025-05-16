@@ -10,14 +10,17 @@ import (
 	"time"
 )
 
-type MiddlewareJWTBuilder struct {
+type LoginJWTMiddlewareBuilder struct {
 }
 
-func (m *MiddlewareJWTBuilder) CheckLogin() gin.HandlerFunc {
+func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		//这两个接口不需要登录校验
-		if path == "/users/signup" || path == "/users/login" || path == "/login_sms/code/send" || path == "/login_sms" {
+		if path == "/users/signup" ||
+			path == "/users/login" ||
+			path == "/users/login_sms/code/send" ||
+			path == "/users/login_sms" {
 			println("跳过登录校验...")
 			return
 		}

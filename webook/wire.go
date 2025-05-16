@@ -22,7 +22,7 @@ func InitWebserver() *gin.Engine {
 		service.NewUserService, service.NewCodeService,
 		ioc.InitSMSService,
 		web.NewUserHandler,
-		ioc.InitMiddleware,
+		ioc.InitGinMiddlewares,
 		ioc.InitWebServer,
 	)
 	return gin.Default()
