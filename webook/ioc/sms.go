@@ -11,6 +11,7 @@ import (
 )
 
 func InitSMSService() sms.Service {
+	//return ratelimit.NewRateLimiterSMSService(limiter.NewRedisSlidingWindowsLimiter(), localsms.NewService())
 	return localsms.NewService()
 	//return initTencentSMSService()
 }
