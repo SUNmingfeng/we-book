@@ -26,11 +26,11 @@ func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers
 	if err != nil {
 		return err
 	}
-	for _, strtusPtr := range response.Response.SendStatusSet {
-		if strtusPtr == nil {
+	for _, statusPtr := range response.Response.SendStatusSet {
+		if statusPtr == nil {
 			continue
 		}
-		status := *strtusPtr
+		status := *statusPtr
 		if status.Code == nil || *(status.Code) != "Ok" {
 			return fmt.Errorf("发送短信失败 code: %s, msg: %s", *status.Code, *status.Message)
 		}
