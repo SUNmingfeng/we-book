@@ -19,6 +19,7 @@ type UserService interface {
 	FindById(ctx *gin.Context, userid int64) (domain.User, error)
 	UpdateInfo(ctx *gin.Context, user domain.User) error
 	FindOrCreate(ctx *gin.Context, phone string) (domain.User, error)
+	FindOrCreateByWechat(ctx *gin.Context, info domain.WechatInfo) (domain.User, error)
 }
 type userService struct {
 	repo repository.UserRepository
@@ -77,4 +78,21 @@ func (svc *userService) FindOrCreate(ctx *gin.Context, phone string) (domain.Use
 	//err == nil (创建用户成功)或 err == RepoErrDuplicateUser(用户存在)
 	//这里查找用户不一定能找到，因为数据库可能存在主从延迟
 	return svc.repo.FindByPhone(ctx, phone)
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx *gin.Context, info domain.WechatInfo) (domain.User, error) {
+	u, err := svc.repo.FindByWechat(ctx, info.OpenId)
+	if err != repository.ErrRecordNotFound {
+		//两种情况：一种是err为其他错误，统一为系统错误，另一种是找到数据，err==nil
+		return u, err
+	}
+	err = svc.repo.Create(ctx, domain.User{
+		WechatInfo: info,
+	})
+	if err != nil && err != repository.RepoErrDuplicateUser {
+		return domain.User{}, err
+	}
+	//err == nil (创建用户成功)或 err == RepoErrDuplicateUser(用户存在)
+	//这里查找用户不一定能找到，因为数据库可能存在主从延迟
+	return svc.repo.FindByWechat(ctx, info.OpenId)
 }
